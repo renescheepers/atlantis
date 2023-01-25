@@ -347,6 +347,33 @@ func (r *RedisDB) UpdatePullWithResults(pull models.PullRequest, newResults []co
 	return newStatus, errors.Wrap(r.writePull(key, newStatus), "db transaction failed")
 }
 
+func (r *RedisDB) LockWorkingDir(cloneDir string, pr models.PullRequest) (bool, error) {
+	key := r.wsKey(cloneDir, pr)
+	newLockSerialized, _ := json.Marshal(key)
+
+	_, err := r.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		err := r.client.Set(ctx, key, newLockSerialized, time.Minute*1).Err()
+		return false, errors.Wrap(err, "db transaction failed")
+	} else if err != nil {
+		return false, errors.Wrap(err, "db transaction failed")
+	} else {
+		return false, errors.New("db transaction failed: lock already exists")
+	}
+}
+
+func (r *RedisDB) UnlockWorkingDir(cloneDir string, pr models.PullRequest) error {
+	key := r.wsKey(cloneDir, pr)
+	_, err := r.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return errors.New("db transaction failed: no lock exists")
+	} else if err != nil {
+		return errors.Wrap(err, "db transaction failed")
+	} else {
+		return r.client.Del(ctx, key).Err()
+	}
+}
+
 func (r *RedisDB) getPull(key string) (*models.PullStatus, error) {
 	val, err := r.client.Get(ctx, key).Result()
 	if err == redis.Nil {
@@ -378,6 +405,10 @@ func (r *RedisDB) deletePull(key string) error {
 
 func (r *RedisDB) lockKey(p models.Project, workspace string) string {
 	return fmt.Sprintf("pr/%s/%s/%s", p.RepoFullName, p.Path, workspace)
+}
+
+func (r *RedisDB) wsKey(cloneDir string, pr models.PullRequest) string {
+	return fmt.Sprintf("ws/%d/%s", pr.Num, cloneDir)
 }
 
 func (r *RedisDB) commandLockKey(cmdName command.Name) string {

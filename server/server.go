@@ -454,6 +454,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	workingDirLocker := events.NewDefaultWorkingDirLocker()
 
 	var workingDir events.WorkingDir = &events.FileWorkspace{
+		LockingThingy:    backend,
 		DataDir:          userConfig.DataDir,
 		CheckoutMerge:    userConfig.CheckoutStrategy == "merge",
 		GithubAppEnabled: githubAppEnabled,

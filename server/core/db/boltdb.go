@@ -438,6 +438,14 @@ func (b *BoltDB) UpdateProjectStatus(pull models.PullRequest, workspace string, 
 	return errors.Wrap(err, "DB transaction failed")
 }
 
+func (r *BoltDB) LockWorkingDir(cloneDir string, pr models.PullRequest) (bool, error) {
+	return false, errors.New("NOT IMPLEMENTED")
+}
+
+func (r *BoltDB) UnlockWorkingDir(cloneDir string, pr models.PullRequest) error {
+	return errors.New("NOT IMPLEMENTED")
+}
+
 func (b *BoltDB) pullKey(pull models.PullRequest) ([]byte, error) {
 	hostname := pull.BaseRepo.VCSHost.Hostname
 	if strings.Contains(hostname, pullKeySeparator) {

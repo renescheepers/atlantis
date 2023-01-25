@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/runatlantis/atlantis/server/core/locking"
 	"github.com/runatlantis/atlantis/server/events/models"
 	"github.com/runatlantis/atlantis/server/logging"
 )
@@ -53,6 +54,8 @@ type WorkingDir interface {
 
 // FileWorkspace implements WorkingDir with the file system.
 type FileWorkspace struct {
+	LockingThingy locking.Backend
+
 	DataDir string
 	// CheckoutMerge is true if we should check out the branch that corresponds
 	// to what the base branch will look like *after* the pull request is merged.
@@ -205,13 +208,20 @@ func (w *FileWorkspace) forceClone(log logging.SimpleLogging,
 	value, _ := cloneLocks.LoadOrStore(cloneDir, new(sync.Mutex))
 	mutex := value.(*sync.Mutex)
 
+	_, err := w.LockingThingy.LockWorkingDir(cloneDir, p)
+	if err != nil {
+		return errors.Wrap(err, "something")
+	}
+
+	defer w.LockingThingy.UnlockWorkingDir(cloneDir, p)
+
 	defer mutex.Unlock()
 	if locked := mutex.TryLock(); !locked {
 		mutex.Lock()
 		return nil
 	}
 
-	err := os.RemoveAll(cloneDir)
+	err = os.RemoveAll(cloneDir)
 	if err != nil {
 		return errors.Wrapf(err, "deleting dir %q before cloning", cloneDir)
 	}

@@ -43,6 +43,9 @@ type Backend interface {
 	LockCommand(cmdName command.Name, lockTime time.Time) (*command.Lock, error)
 	UnlockCommand(cmdName command.Name) error
 	CheckCommandLock(cmdName command.Name) (*command.Lock, error)
+
+	LockWorkingDir(cloneDir string, pr models.PullRequest) (bool, error)
+	UnlockWorkingDir(cloneDir string, pr models.PullRequest) error
 }
 
 // TryLockResponse results from an attempted lock.

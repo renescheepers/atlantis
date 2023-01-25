@@ -1,0 +1,10 @@
+---
+api-secret: secret
+repo-allowlist: github.com/renescheeepers-test-org/atlantis-test
+gh-webhook-secret: secret
+gh-user: renescheepers
+log-level: info
+data-dir: /Users/renescheepers/go/src/github.com/runatlantis/atlantis/datadir
+checkout-strategy: merge
+redis-host: localhost
+locking-db-type: redis
